@@ -1,64 +1,58 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 module.exports = {
   loginUser: async (req, res) => {
-    try {
-      const user = await User.find({ username: req.body.usename });
-      const pass = await bcrypt.compare(req.body.password1, user.password);
-      if (pass) {
-        return res.status(200).json({
-          msg: "got user",
-          ...user,
-          password: null,
+    const { username, password } = req.body;
+    const user = await User.findOne({ username: username });
+    if (user) {
+      const userPass = await bcrypt.compare(password, user.password);
+      if (userPass) {
+        const token = jwt.sign({ username }, process.env.SECRET, {
+          expiresIn: 10000,
+        });
+        delete user._doc.password;
+
+        res.status(200).json({
+          user: user._doc,
+          token,
         });
       } else {
-        return res.status(400).json({
-          msg: "password or username did not match",
+        res.status(400).json({
+          err: "Password did not match",
         });
       }
-    } catch (error) {
-      return res.staus(400).json({
-        msg: "failed to get user",
+    } else {
+      res.status(400).json({
+        err: "No user found",
       });
     }
   },
-
-
   registerUser: async (req, res) => {
-    try {
-      const user = await User.find({ username: req.body.username });
-      if (!user) {
-        if (req.body.password1 === req.body.password2) {
-          const hass_pass = await bcrypt.hash(req.body.password1);
-          const newuser = new User({
-            first_name: req.body.first_name,
-            last_name: req.body.last_name,
-            password: hass_pass,
-            username: req.body.usename,
-            profile_photo: req.file.path ? req.file.path : "",
-          });
-  
-          await newuser.save();
-          res.status(200).json({
-              msg: 'user registered',
-            ...newuser,
-          });
-        } else {
-          return res.staus(400).json({
-            msg: "Password did not match",
-          });
-        }
-      } else {
-        return res.staus(400).json({
-          msg: "user with the username already exists",
-        });
-      }
-    } catch (error) {
-      return res.staus(400).json({
-        msg: "failed to register user",
+    const { first_name, last_name, username, password } = req.body;
+    const user = await User.findOne({ username: username });
+    const hash = bcrypt.hashSync(password, 12);
+    if (!user) {
+      const newUser = new User({
+        first_name,
+        last_name,
+        username,
+        password: hash
+      });
+      await newUser.save();
+      const token = jwt.sign({ username }, process.env.SECRET, {
+        expiresIn: 10000,
+      });
+      delete newUser._doc.password;
+      res.status(200).json({
+        user: newUser._doc,
+        token,
+      });
+    } else {
+      res.status(200).json({
+        err: "User already exist",
       });
     }
-  }
-}
-
+  },
+};

@@ -3,9 +3,14 @@ const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
 const bodyparser = require("body-parser");
+const {applyPassportStrategy} = require('./middleware/passport');
+const passport = require('passport')
+
 
 const app = express();
 app.use(cors());
+
+applyPassportStrategy(passport);
 app.use(bodyparser.json());
 app.use(bodyparser.urlencoded({ extended: false }));
 app.use(morgan("dev"));

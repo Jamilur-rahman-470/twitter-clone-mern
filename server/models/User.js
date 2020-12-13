@@ -9,7 +9,7 @@ const User = new Schema(
     first_name: { type: String, required: true, trim: true },
     last_name: { type: String, required: true, trim: true },
     username: { type: String, unique: true, required: true, trim: true },
-    password: { type: String, maxlength: 8, required: true },
+    password: { type: String,  required: true },
     role: { type: String, enum: ["ADMIN", "USER"], default: "USER" },
   },
   { timestamps: true }
